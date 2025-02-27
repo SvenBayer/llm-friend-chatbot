@@ -1,19 +1,19 @@
 package de.sven.bayer.llm_friend_chatbot.service;
 
-import de.sven.bayer.llm_friend_chatbot.model.ConversationHistory;
-import de.sven.bayer.llm_friend_chatbot.model.LlmAnswer;
-import de.sven.bayer.llm_friend_chatbot.model.LlmAnswerWithThink;
-import de.sven.bayer.llm_friend_chatbot.model.UserMessage;
+import de.sven.bayer.llm_friend_chatbot.ai.tool.LlmMemoryTool;
+import de.sven.bayer.llm_friend_chatbot.model.conversation.AnswerAndThink;
+import de.sven.bayer.llm_friend_chatbot.model.conversation.LlmAnswerWithThink;
+import de.sven.bayer.llm_friend_chatbot.model.conversation.MessageFromUser;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.UUID;
+
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
 @Service
 public class OllamaChatService implements IOllamaChatService {
@@ -21,35 +21,42 @@ public class OllamaChatService implements IOllamaChatService {
     private final OllamaProcessService ollamaProcessService;
     private final ChatClient chatClient;
     private final SystemPromptService systemPromptService;
-    private final ConversationHistory conversationHistory;
     private final ThinkAnswerExtractorService thinkAnswerExtractorService;
 
-    public OllamaChatService(OllamaProcessService ollamaProcessService, ChatClient.Builder chatClient, SystemPromptService systemPromptService, ConversationHistory conversationHistory, ThinkAnswerExtractorService thinkAnswerExtractorService) {
+    public OllamaChatService(ChatClient.Builder chatClient, SummarizingChatMemoryService summarizingChatMemoryService,OllamaProcessService ollamaProcessService, SystemPromptService systemPromptService, ThinkAnswerExtractorService thinkAnswerExtractorService) {
+        this.chatClient = chatClient.defaultAdvisors(
+                new PromptChatMemoryAdvisor(summarizingChatMemoryService)
+        ).build();
         this.ollamaProcessService = ollamaProcessService;
-        this.chatClient = chatClient.build();
         this.systemPromptService = systemPromptService;
-        this.conversationHistory = conversationHistory;
         this.thinkAnswerExtractorService = thinkAnswerExtractorService;
     }
 
-    public LlmAnswer responseForMessage(UserMessage userMessage) {
-        Prompt systemPrompt = systemPromptService.getSystemPrompt();
+    public LlmAnswerWithThink responseForMessage(MessageFromUser messageFromUser) {
+        Prompt systemPrompt;
+        if (messageFromUser.getConversationId() == null || messageFromUser.getConversationId().isEmpty()) {
+            messageFromUser.setConversationId(UUID.randomUUID().toString());
+            systemPrompt = systemPromptService.getInitialSystemPrompt();
+        } else {
+            systemPrompt = systemPromptService.getSystemPrompt();
+        }
         System.out.printf("System prompt: " + systemPrompt.getContents());
 
         String response = chatClient.prompt()
                 .system(systemPrompt.getContents())
-                .user(userMessage.message()).messages()
+                .user(messageFromUser.getMessage())
+                //.tools(new LlmMemoryTool())
+                .advisors(advisorSpec -> advisorSpec
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, messageFromUser.getConversationId())
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
                 .call()
                 .content();
         ollamaProcessService.stopOllamaContainer();
+        System.out.println("Response: " + response);
 
-        LlmAnswerWithThink llmAnswerWithThink = new LlmAnswerWithThink(response);
-        LlmAnswer llmAnswer = thinkAnswerExtractorService.extractAnswer(llmAnswerWithThink);
+        AnswerAndThink answerAndThink = thinkAnswerExtractorService.extractAnswer(response);
+        LlmAnswerWithThink llmAnswerWithThink = new LlmAnswerWithThink(answerAndThink.answer(), answerAndThink.think(), messageFromUser.getConversationId());
 
-        conversationHistory.addEntry(userMessage, llmAnswer);
-
-        return llmAnswer;
+        return llmAnswerWithThink;
     }
-
-
 }

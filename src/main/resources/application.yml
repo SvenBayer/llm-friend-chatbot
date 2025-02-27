@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: llm-friend-chatbot
+  ai:
+    ollama:
+      chat:
+        # model: mistral:7b-instruct-v0.3-q8_0
+        # model: deepseek-r1:14b
+        model: llama3.1:8b
+    vectorstore:
+      milvus:
+        client:
+          host: "localhost"
+          port: 19530
+          username: "root"
+          password: "milvus"
+        databaseName: "default"
+        collectionName: "vector_store"
+        embeddingDimension: 1536
+        indexType: IVF_FLAT
+        metricType: COSINE
+de:
+  sven:
+    bayer:
+      llm:
+        friend:
+          chatbot:
+            llmName: Lumi
+            maxDetailConversationMessagesHistory: 6
+            maxConversationMessageHistory: 16
+            maxSummarizationLength: 30
