@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: llm-friend-chatbot
@@ -5,20 +8,26 @@ spring:
     ollama:
       chat:
         # model: mistral:7b-instruct-v0.3-q8_0
-        # model: deepseek-r1:14b
+        #model: deepseek-r1:14b
         model: llama3.1:8b
+        # model: llama3.2:3b
+      embedding:
+        model: nomic-embed-text
     vectorstore:
-      milvus:
-        client:
-          host: "localhost"
-          port: 19530
-          username: "root"
-          password: "milvus"
-        databaseName: "default"
-        collectionName: "vector_store"
-        embeddingDimension: 1536
-        indexType: IVF_FLAT
-        metricType: COSINE
+      qdrant:
+        host: localhost
+        port: 6334
+        collection-name: vector_store
+        initialize-schema: true
+        dimension: 768
+  docker:
+    compose:
+      readiness:
+        timeout: 5m
+      wait:
+        log-patterns:
+          qdrant: "running"
+      # lifecycle-management: start_only
 de:
   sven:
     bayer:

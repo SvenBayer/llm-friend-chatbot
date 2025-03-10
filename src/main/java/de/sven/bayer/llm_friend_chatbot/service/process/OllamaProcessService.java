@@ -1,4 +1,4 @@
-package de.sven.bayer.llm_friend_chatbot.service;
+package de.sven.bayer.llm_friend_chatbot.service.process;
 
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;

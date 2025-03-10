@@ -23,12 +23,6 @@ public class SystemPromptService {
     @Value("classpath:templates/system-prompt.st")
     private Resource systemPromptTemplate;
 
-    @Value("classpath:templates/summarization-prompt.st")
-    private Resource summarizationPromptTemplate;
-
-    @Value("classpath:templates/overall-summary-prompt.st")
-    private Resource overallSummaryPromptTemplate;
-
     public SystemPromptService(ConfigProperties configProperties) {
         this.configProperties = configProperties;
     }
@@ -43,25 +37,6 @@ public class SystemPromptService {
         Map<String, Object> params = new HashMap<>();
         params.put("llmName", configProperties.llmName);
         return createPromptFromTemplate(this.systemPromptTemplate, params);
-    }
-
-    public Prompt getSummarizationPrompt(MessageType speaker, Message oldDetailledMessage) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("llmName", configProperties.llmName);
-        params.put("maxLength", configProperties.maxSummarizationLength);
-        params.put("speaker", speaker.getValue());
-        params.put("detailedConversation", oldDetailledMessage.getText());
-        return createPromptFromTemplate(this.summarizationPromptTemplate, params);
-    }
-
-    public Prompt getOverallSummaryPrompt(MessageType speaker, Message existingSummary, Message oldDetailledMessage) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("llmName", configProperties.llmName);
-        params.put("maxLength", configProperties.maxSummarizationLength);
-        params.put("speaker", speaker.getValue());
-        params.put("existingSummary", existingSummary.getText());
-        params.put("detailedConversation", oldDetailledMessage.getText());
-        return createPromptFromTemplate(this.overallSummaryPromptTemplate, params);
     }
 
     private Prompt createPromptFromTemplate(Resource templateResource, Map<String, Object> params) {

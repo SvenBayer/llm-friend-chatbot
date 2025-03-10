@@ -10,10 +10,10 @@ public class ChatClientService implements ChatClient {
 
     private final ChatClient chatClient;
 
-    public ChatClientService(ChatClient.Builder chatClientBuilder, SummarizingChatMemoryService summarizingChatMemoryService) {
+    public ChatClientService(ChatClient.Builder chatClientBuilder, SummarizerChatMemoryService summarizerChatMemoryService) {
         this.chatClient = chatClientBuilder
                 .defaultAdvisors(
-                        new PromptChatMemoryAdvisor(summarizingChatMemoryService))
+                        new PromptChatMemoryAdvisor(summarizerChatMemoryService))
                 .build();
     }
 
