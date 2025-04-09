@@ -1,8 +1,7 @@
 package de.sven.bayer.llm_friend_chatbot.service;
 
 import de.sven.bayer.llm_friend_chatbot.config.ConfigProperties;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
+import de.sven.bayer.llm_friend_chatbot.model.message.RelevantMemories;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,16 +26,23 @@ public class SystemPromptService {
         this.configProperties = configProperties;
     }
 
-    public Prompt getInitialSystemPrompt() {
-        Map<String, Object> params = new HashMap<>();
-        params.put("llmName", configProperties.llmName);
+    public Prompt getInitialSystemPrompt(RelevantMemories relevantMemories) {
+        Map<String, Object> params = getParamsForSystemPrompt(relevantMemories);
         return createPromptFromTemplate(this.initialSystemPromptTemplate, params);
     }
 
-    public Prompt getSystemPrompt() {
+    public Prompt getSystemPrompt(RelevantMemories relevantMemories) {
+        Map<String, Object> params = getParamsForSystemPrompt(relevantMemories);
+        return createPromptFromTemplate(this.systemPromptTemplate, params);
+    }
+
+    private Map<String, Object> getParamsForSystemPrompt(RelevantMemories relevantMemories) {
         Map<String, Object> params = new HashMap<>();
         params.put("llmName", configProperties.llmName);
-        return createPromptFromTemplate(this.systemPromptTemplate, params);
+        params.put("assumptions", relevantMemories.getAssumptionText());
+        params.put("suggestions", relevantMemories.getSuggestionText());
+        params.put("memories", relevantMemories.getMemoryText());
+        return params;
     }
 
     private Prompt createPromptFromTemplate(Resource templateResource, Map<String, Object> params) {

@@ -11,23 +11,7 @@ spring:
         #model: deepseek-r1:14b
         model: llama3.1:8b
         # model: llama3.2:3b
-      embedding:
-        model: nomic-embed-text
-    vectorstore:
-      qdrant:
-        host: localhost
-        port: 6334
-        collection-name: vector_store
-        initialize-schema: true
-        dimension: 768
-  docker:
-    compose:
-      readiness:
-        timeout: 5m
-      wait:
-        log-patterns:
-          qdrant: "running"
-      # lifecycle-management: start_only
+        #model: gemma3:12b
 de:
   sven:
     bayer:
